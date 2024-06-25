@@ -7,8 +7,8 @@ import { fileURLToPath } from 'url';
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 
-const user_agent = 'User Agent';
-const cookie_value = 'cf_clearance=abcdefghijklmnopq';
+const user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36';
+const cookie_value = 'cf_clearance=hScUYYW2Cy7cqxup8LNoSGhSdtu8rP7UKg7_IcBR3yg-1713277222-1.0.1.1-k6E9Qg7QSxFrQKK00569A7SG91JBWbopKtKLzOjVvrjTglOsSD29ZhykNAcrB.4WwTrBA8HqBSyGLQSn_Vhotg';
 const nhentai = new NHentai({ site: 'nhentai.net', user_agent, cookie_value });
 const app = express();
 const port = 3000;
