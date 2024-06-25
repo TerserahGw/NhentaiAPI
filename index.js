@@ -58,8 +58,8 @@ app.get('/doujin', async (req, res) => {
         console.log(doujinTitle);
         const { images } = await doujin.getContents();
 
-        // Use process.cwd() to get the current working directory
-        const tempDir = path.join(process.cwd(), 'temp');
+        // Use /tmp directory for temporary files
+        const tempDir = '/tmp';
         const pdfFilename = path.join(tempDir, `${doujinTitle}.pdf`);
 
         if (!fs.existsSync(tempDir)) {
@@ -88,7 +88,7 @@ app.get('/doujin', async (req, res) => {
         const fileUrl = file.data.webViewLink;
         res.json({ url: fileUrl });
 
-        // Schedule deletion after 30 seconds
+        // Schedule deletion after 60 seconds (1 minute)
         setTimeout(async () => {
             try {
                 await drive.files.delete({ fileId: fileId });
@@ -98,6 +98,7 @@ app.get('/doujin', async (req, res) => {
             }
         }, 60000);
 
+        // Delete local PDF file
         fs.unlinkSync(pdfFilename);
     } catch (error) {
         console.error('Error searching nhentai:', error);
