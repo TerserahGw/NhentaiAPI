@@ -57,10 +57,13 @@ app.get('/doujin', async (req, res) => {
         const doujinTitle = doujin.title;
         console.log(doujinTitle);
         const { images } = await doujin.getContents();
-        const pdfFilename = path.join(__dirname, 'temp', `${doujinTitle}.pdf`);
 
-        if (!fs.existsSync(path.join(__dirname, 'temp'))) {
-            fs.mkdirSync(path.join(__dirname, 'temp'));
+        // Use process.cwd() to get the current working directory
+        const tempDir = path.join(process.cwd(), 'temp');
+        const pdfFilename = path.join(tempDir, `${doujinTitle}.pdf`);
+
+        if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir);
         }
 
         await images.PDF(pdfFilename);
@@ -93,7 +96,7 @@ app.get('/doujin', async (req, res) => {
             } catch (error) {
                 console.error('Error deleting file from Google Drive:', error);
             }
-        }, 30000);
+        }, 60000);
 
         fs.unlinkSync(pdfFilename);
     } catch (error) {
