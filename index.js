@@ -51,14 +51,15 @@ app.get('/doujin', async (req, res) => {
     try {
         const { data } = await nhentai.search(query, { page: 1 });
         if (data.length === 0) {
-            return res.status(404).send('No doujin found for the given query');
+            return res.status(404).json({ info: 'Not Found' });
         }
-        const doujin = data[0];
+
+        const randomIndex = Math.floor(Math.random() * data.length);
+        const doujin = data[randomIndex];
         const doujinTitle = doujin.title;
         console.log(doujinTitle);
         const { images } = await doujin.getContents();
 
-        // Use /tmp directory for temporary files
         const tempDir = '/tmp';
         const pdfFilename = path.join(tempDir, `${doujinTitle}.pdf`);
 
@@ -88,7 +89,6 @@ app.get('/doujin', async (req, res) => {
         const fileUrl = file.data.webViewLink;
         res.json({ url: fileUrl });
 
-        // Schedule deletion after 60 seconds (1 minute)
         setTimeout(async () => {
             try {
                 await drive.files.delete({ fileId: fileId });
@@ -98,7 +98,6 @@ app.get('/doujin', async (req, res) => {
             }
         }, 60000);
 
-        // Delete local PDF file
         fs.unlinkSync(pdfFilename);
     } catch (error) {
         console.error('Error searching nhentai:', error);
