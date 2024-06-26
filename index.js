@@ -48,60 +48,64 @@ app.get('/doujin', async (req, res) => {
     if (!query) {
         return res.status(400).send('Query parameter "q" is required');
     }
-    try {
-        const { data } = await nhentai.search(query, { page: 1 });
-        if (data.length === 0) {
-            return res.status(404).json({ info: 'Not Found' });
-        }
 
-        const randomIndex = Math.floor(Math.random() * data.length);
-        const doujin = data[randomIndex];
-        const doujinTitle = doujin.title;
-        console.log(doujinTitle);
-        const { images } = await doujin.getContents();
-
-        const tempDir = '/tmp';
-        const pdfFilename = path.join(tempDir, `${doujinTitle}.pdf`);
-
-        if (!fs.existsSync(tempDir)) {
-            fs.mkdirSync(tempDir);
-        }
-
-        await images.PDF(pdfFilename);
-
-        const fileMetadata = {
-            name: `${doujinTitle}.pdf`,
-            parents: ['1UHbD8eGuMRYSF6Du0ZCftkN0HuVhaLW6']
-        };
-
-        const media = {
-            mimeType: 'application/pdf',
-            body: fs.createReadStream(pdfFilename)
-        };
-
-        const file = await drive.files.create({
-            resource: fileMetadata,
-            media: media,
-            fields: 'id, webViewLink'
-        });
-
-        const fileId = file.data.id;
-        const fileUrl = file.data.webViewLink;
-        res.json({ url: fileUrl });
-
-        setTimeout(async () => {
-            try {
-                await drive.files.delete({ fileId: fileId });
-                console.log('File deleted from Google Drive:', fileUrl);
-            } catch (error) {
-                console.error('Error deleting file from Google Drive:', error);
+    let success = false;
+    while (!success) {
+        try {
+            const { data } = await nhentai.search(query, { page: 1 });
+            if (data.length === 0) {
+                return res.status(404).json({ info: 'Not Found' });
             }
-        }, 60000);
 
-        fs.unlinkSync(pdfFilename);
-    } catch (error) {
-        console.error('Error searching nhentai:', error);
-        res.status(500).send('Error searching nhentai');
+            const randomIndex = Math.floor(Math.random() * data.length);
+            const doujin = data[randomIndex];
+            const doujinTitle = doujin.title;
+            console.log(doujinTitle);
+            const { images } = await doujin.getContents();
+
+            const tempDir = '/tmp';
+            const pdfFilename = path.join(tempDir, `${doujinTitle}.pdf`);
+
+            if (!fs.existsSync(tempDir)) {
+                fs.mkdirSync(tempDir);
+            }
+
+            await images.PDF(pdfFilename);
+
+            const fileMetadata = {
+                name: `${doujinTitle}.pdf`,
+                parents: ['1UHbD8eGuMRYSF6Du0ZCftkN0HuVhaLW6']
+            };
+
+            const media = {
+                mimeType: 'application/pdf',
+                body: fs.createReadStream(pdfFilename)
+            };
+
+            const file = await drive.files.create({
+                resource: fileMetadata,
+                media: media,
+                fields: 'id, webViewLink'
+            });
+
+            const fileId = file.data.id;
+            const fileUrl = file.data.webViewLink;
+            res.json({ url: fileUrl });
+
+            setTimeout(async () => {
+                try {
+                    await drive.files.delete({ fileId: fileId });
+                    console.log('File deleted from Google Drive:', fileUrl);
+                } catch (error) {
+                    console.error('Error deleting file from Google Drive:', error);
+                }
+            }, 60000);
+
+            fs.unlinkSync(pdfFilename);
+            success = true;
+        } catch (error) {
+            console.error('Error searching nhentai or saving file:', error);
+        }
     }
 });
 
