@@ -61,7 +61,19 @@ app.get('/doujin', async (req, res) => {
             doujin = data[randomIndex];
             doujinTitle = doujin.title;
             console.log(doujinTitle);
-            images = await doujin.getContents();
+
+            // Debugging: Inspect the structure of the returned content
+            try {
+                const contents = await doujin.getContents();
+                console.log('Contents structure:', JSON.stringify(contents, null, 2));
+                images = contents.images;
+                if (!images || !images.pages) {
+                    throw new Error('Unexpected contents structure');
+                }
+            } catch (error) {
+                console.error('Error retrieving doujin contents:', error);
+                return res.status(500).send('Error retrieving doujin contents');
+            }
 
             totalSize = await Promise.all(images.pages.map(async (image) => {
                 const response = await axios.head(image.url);
