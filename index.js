@@ -6,6 +6,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
+import axios from 'axios';
 
 const user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36';
 const cookie_value = 'cf_clearance=hScUYYW2Cy7cqxup8LNoSGhSdtu8rP7UKg7_IcBR3yg-1713277222-1.0.1.1-k6E9Qg7QSxFrQKK00569A7SG91JBWbopKtKLzOjVvrjTglOsSD29ZhykNAcrB.4WwTrBA8HqBSyGLQSn_Vhotg';
@@ -54,11 +55,21 @@ app.get('/doujin', async (req, res) => {
             return res.status(404).json({ info: 'Not Found' });
         }
 
-        const randomIndex = Math.floor(Math.random() * data.length);
-        const doujin = data[randomIndex];
-        const doujinTitle = doujin.title;
-        console.log(doujinTitle);
-        const { images } = await doujin.getContents();
+        let doujin, doujinTitle, images, totalSize;
+        do {
+            const randomIndex = Math.floor(Math.random() * data.length);
+            doujin = data[randomIndex];
+            doujinTitle = doujin.title;
+            console.log(doujinTitle);
+            images = await doujin.getContents();
+
+            totalSize = await Promise.all(images.pages.map(async (image) => {
+                const response = await axios.head(image.url);
+                return parseInt(response.headers['content-length'], 10);
+            }));
+
+            totalSize = totalSize.reduce((acc, size) => acc + size, 0);
+        } while (totalSize > 10 * 1024 * 1024); // 10 MB
 
         const tempDir = '/tmp';
         const pdfFilename = path.join(tempDir, `${doujinTitle}.pdf`);
