@@ -52,9 +52,11 @@ app.get('/doujin', async (req, res) => {
     let success = false;
     while (!success) {
         try {
-            const { data } = await nhentai.search(query, { page: 1 });
+            const randomPage = Math.floor(Math.random() * 10) + 1;
+            const { data } = await nhentai.search(query, { page: randomPage });
+
             if (data.length === 0) {
-                return res.status(404).json({ info: 'Not Found' });
+                continue; // Retry with a different random page
             }
 
             const randomIndex = Math.floor(Math.random() * data.length);
