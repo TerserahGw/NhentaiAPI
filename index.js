@@ -33,8 +33,6 @@ cron.schedule('* * * * *', async () => {
     }
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
-
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -63,16 +61,16 @@ app.get('/doujin', async (req, res) => {
             console.log(doujinTitle);
             const { images } = await doujin.getContents();
 
-            const tempDir = path.join(__dirname, 'public', 'pdfs');
+            const tempDir = '/tmp';
             const pdfFilename = path.join(tempDir, `${doujinTitle}.pdf`);
 
             if (!fs.existsSync(tempDir)) {
-                fs.mkdirSync(tempDir, { recursive: true });
+                fs.mkdirSync(tempDir);
             }
 
             await images.PDF(pdfFilename);
 
-            const fileUrl = `http://${hostname}/pdfs/${encodeURIComponent(doujinTitle)}.pdf`;
+            const fileUrl = `http://${hostname}/nsfw/${encodeURIComponent(doujinTitle)}.pdf`;
             res.json({ url: fileUrl });
 
             deleteFileAfterOneHour(pdfFilename, fileUrl);
@@ -83,6 +81,12 @@ app.get('/doujin', async (req, res) => {
         }
     }
 });
+
+app.use('/nsfw', (req, res, next) => {
+    const filePath = path.join('/tmp', req.path);
+    res.setHeader('Content-Disposition', `attachment; filename="${path.basename(filePath)}"`);
+    next();
+}, express.static('/tmp'));
 
 app.listen(port, '0.0.0.0', () => {
     console.log(`Server is running on port ${port}`);
