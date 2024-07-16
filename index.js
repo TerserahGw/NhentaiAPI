@@ -14,11 +14,12 @@ const port = process.env.PORT || 80;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const deleteFileAfterOneHour = (pdfPath) => {
+const deleteFileAfterOneHour = (pdfPath, fileUrl) => {
     setTimeout(() => {
         if (fs.existsSync(pdfPath)) {
             fs.unlinkSync(pdfPath);
             console.log(`File deleted: ${pdfPath}`);
+            console.log(`File URL deleted: ${fileUrl}`);
         }
     }, 3600000);
 };
@@ -57,6 +58,7 @@ app.get('/doujin', async (req, res) => {
             const randomIndex = Math.floor(Math.random() * data.length);
             const doujin = data[randomIndex];
             const doujinTitle = doujin.title;
+            console.log(doujinTitle);
             const { images } = await doujin.getContents();
 
             const tempDir = '/tmp';
@@ -71,14 +73,11 @@ app.get('/doujin', async (req, res) => {
             const fileUrl = `http://${hostname}/nsfw/${encodeURIComponent(doujinTitle)}.pdf`;
             res.json({ url: fileUrl });
 
-            deleteFileAfterOneHour(pdfFilename);
+            deleteFileAfterOneHour(pdfFilename, fileUrl);
 
             success = true;
         } catch (error) {
             console.error('Error searching nhentai or saving file:', error);
-            if (!res.headersSent) {
-                res.status(500).send('Internal Server Error');
-            }
         }
     }
 });
@@ -86,17 +85,8 @@ app.get('/doujin', async (req, res) => {
 app.use('/nsfw', (req, res, next) => {
     const filePath = path.join('/tmp', req.path);
     res.setHeader('Content-Disposition', `attachment; filename="${path.basename(filePath)}"`);
-    
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.on('open', () => {
-        fileStream.pipe(res);
-    });
-
-    fileStream.on('error', (err) => {
-        console.error('Error streaming file:', err);
-        res.status(500).send('Internal Server Error');
-    });
-});
+    next();
+}, express.static('/tmp'));
 
 app.listen(port, '0.0.0.0', () => {
     console.log(`Server is running on port ${port}`);
