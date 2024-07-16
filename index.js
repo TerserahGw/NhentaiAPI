@@ -84,7 +84,7 @@ app.get('/doujin', async (req, res) => {
                 pdfUrl: pdfUrl
             });
 
-            deleteFileAfterOneHour(pdfFilename, pdfUrl);
+            deleteFileAfterOneHour(pdfFilename, doujinUrl);
 
             success = true;
         }
@@ -123,7 +123,8 @@ app.use('/nsfw', (req, res, next) => {
     const filePath = path.join(__dirname, 'pdf', req.path);
     res.setHeader('Content-Disposition', `attachment; filename="${path.basename(filePath)}"`);
     next();
-},
+});
+
 app.listen(port, '0.0.0.0', () => {
     console.log(`Server is running on port ${port}`);
 });
