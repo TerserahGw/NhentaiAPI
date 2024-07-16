@@ -14,6 +14,17 @@ const port = 3000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Function to delete PDF file after 1 hour
+const deleteFileAfterOneHour = (pdfPath, fileUrl) => {
+    setTimeout(() => {
+        if (fs.existsSync(pdfPath)) {
+            fs.unlinkSync(pdfPath);
+            console.log(`File deleted: ${pdfPath}`);
+            console.log(`File URL deleted: ${fileUrl}`);
+        }
+    }, 3600000); // 1 hour in milliseconds
+};
+
 cron.schedule('* * * * *', async () => {
     try {
         const { data } = await nhentai.explore();
@@ -29,6 +40,8 @@ app.get('/', (req, res) => {
 
 app.get('/doujin', async (req, res) => {
     const query = req.query.q;
+    const hostname = req.hostname;
+
     if (!query) {
         return res.status(400).send('Query parameter "q" is required');
     }
@@ -58,10 +71,11 @@ app.get('/doujin', async (req, res) => {
 
             await images.PDF(pdfFilename);
 
-            const pdfUrl = `http://localhost:${port}/pdf/${encodeURIComponent(doujinTitle)}.pdf`;
-            res.json({ url: pdfUrl });
+            const fileUrl = `http://${hostname}:${port}/pdf/${encodeURIComponent(doujinTitle)}.pdf`;
+            res.json({ url: fileUrl });
 
-            fs.unlinkSync(pdfFilename);
+            deleteFileAfterOneHour(pdfFilename, fileUrl);
+
             success = true;
         } catch (error) {
             console.error('Error searching nhentai or saving file:', error);
@@ -75,6 +89,6 @@ app.get('/pdf/:filename', (req, res) => {
     res.sendFile(pdfPath);
 });
 
-app.listen(port, () => {
-    console.log(`Server is running at http://localhost:${port}`);
+app.listen(port, '0.0.0.0', () => {
+    console.log(`Server is running on port ${port}`);
 });
