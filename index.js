@@ -88,10 +88,8 @@ app.use('/nsfw', (req, res, next) => {
     res.setHeader('Content-Disposition', `attachment; filename="${path.basename(filePath)}"`);
     
     const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
-
-    fileStream.on('end', () => {
-        deleteFileAfterOneHour(filePath);
+    fileStream.on('open', () => {
+        fileStream.pipe(res);
     });
 
     fileStream.on('error', (err) => {
