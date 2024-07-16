@@ -86,8 +86,33 @@ app.get('/doujin', async (req, res) => {
         }
     } catch (error) {
         console.error('Error searching nhentai or saving file:', error);
-        res.status(500).send('Internal Server Error');
+        res.status(500).send('Not Found');
     }
+});
+
+app.get('/remove', (req, res) => {
+    const securityKey = req.query.key;
+
+    if (securityKey !== 'AdminKei778') {
+        return res.status(403).send('Unauthorized');
+    }
+
+    const pdfFolder = path.join(__dirname, 'pdf');
+
+    fs.readdir(pdfFolder, (err, files) => {
+        if (err) {
+            console.error('Error reading pdf folder:', err);
+            return res.status(500).send('Internal Server Error');
+        }
+
+        files.forEach(file => {
+            const filePath = path.join(pdfFolder, file);
+            fs.unlinkSync(filePath);
+            console.log(`Removed file: ${filePath}`);
+        });
+
+        res.send({text: 'All files removed from pdf folder'});
+    });
 });
 
 app.use('/nsfw', (req, res, next) => {
