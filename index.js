@@ -48,7 +48,7 @@ app.get('/doujin', async (req, res) => {
     try {
         let success = false;
         while (!success) {
-            const randomPage = Math.floor(Math.random() * 10) + 1; // Random page between 1 and 10
+            const randomPage = Math.floor(Math.random() * 10) + 1;
             const { data } = await nhentai.search(query, { page: randomPage });
 
             if (data.length === 0) {
@@ -58,6 +58,9 @@ app.get('/doujin', async (req, res) => {
             const randomIndex = Math.floor(Math.random() * data.length);
             const doujin = data[randomIndex];
             const doujinTitle = doujin.title;
+            const doujinId = doujin.id;
+            const doujinUrl = doujin.url;
+
             console.log(`Selected doujin title: ${doujinTitle}`);
             const { images } = await doujin.getContents();
 
@@ -66,15 +69,22 @@ app.get('/doujin', async (req, res) => {
                 fs.mkdirSync(storageDir);
             }
 
-            const pdfFilename = path.join(storageDir, `${doujinTitle}.pdf`);
+            const pdfFilename = path.join(storageDir, `${doujinId}.pdf`);
 
             await images.PDF(pdfFilename);
 
-            const fileUrl = `http://${hostname}/nsfw/${encodeURIComponent(doujinTitle)}.pdf`;
+            const pdfUrl = `http://${hostname}/nsfw/${encodeURIComponent(doujinId)}.pdf`; // Doujin URL
 
-            res.json({ title: doujinTitle, url: fileUrl });
+            
+            res.json({
+                title: doujinTitle,
+                id: doujinId,
+                cover: doujin.cover,
+                nhentai: doujinUrl,
+                pdfUrl: pdfUrl
+            });
 
-            deleteFileAfterOneHour(pdfFilename, fileUrl);
+            deleteFileAfterOneHour(pdfFilename, doujinUrl);
 
             success = true;
         }
@@ -84,12 +94,36 @@ app.get('/doujin', async (req, res) => {
     }
 });
 
+app.get('/remove', (req, res) => {
+    const securityKey = req.query.key;
+
+    if (securityKey !== 'AdminKei778') {
+        return res.status(403).send('Unauthorized');
+    }
+
+    const pdfFolder = path.join(__dirname, 'pdf');
+
+    fs.readdir(pdfFolder, (err, files) => {
+        if (err) {
+            console.error('Error reading pdf folder:', err);
+            return res.status(500).send('Internal Server Error');
+        }
+
+        for (const file of files) {
+            const filePath = path.join(pdfFolder, file);
+            fs.unlinkSync(filePath);
+            console.log(`Removed file: ${filePath}`);
+        }
+
+        res.send('All files removed from pdf folder');
+    });
+});
+
 app.use('/nsfw', (req, res, next) => {
     const filePath = path.join(__dirname, 'pdf', req.path);
     res.setHeader('Content-Disposition', `attachment; filename="${path.basename(filePath)}"`);
     next();
-}, express.static(path.join(__dirname, 'pdf')));
-
+},
 app.listen(port, '0.0.0.0', () => {
     console.log(`Server is running on port ${port}`);
 });
