@@ -109,11 +109,11 @@ app.get('/remove', (req, res) => {
             return res.status(500).send('Internal Server Error');
         }
 
-        for (const file of files) {
+        files.forEach(file => {
             const filePath = path.join(pdfFolder, file);
             fs.unlinkSync(filePath);
             console.log(`Removed file: ${filePath}`);
-        }
+        });
 
         res.send('All files removed from pdf folder');
     });
