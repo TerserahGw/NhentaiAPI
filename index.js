@@ -45,10 +45,10 @@ app.get('/doujin', async (req, res) => {
         return res.status(400).send('Query parameter "q" is required');
     }
 
-    let success = false;
-    while (!success) {
-        try {
-            const randomPage = Math.floor(Math.random() * 10) + 1;
+    try {
+        let success = false;
+        while (!success) {
+            const randomPage = Math.floor(Math.random() * 10) + 1; // Random page between 1 and 10
             const { data } = await nhentai.search(query, { page: randomPage });
 
             if (data.length === 0) {
@@ -58,35 +58,37 @@ app.get('/doujin', async (req, res) => {
             const randomIndex = Math.floor(Math.random() * data.length);
             const doujin = data[randomIndex];
             const doujinTitle = doujin.title;
-            console.log(doujinTitle);
+            console.log(`Selected doujin title: ${doujinTitle}`);
             const { images } = await doujin.getContents();
 
-            const tempDir = '/tmp';
-            const pdfFilename = path.join(tempDir, `${doujinTitle}.pdf`);
-
-            if (!fs.existsSync(tempDir)) {
-                fs.mkdirSync(tempDir);
+            const storageDir = path.join(__dirname, 'pdf');
+            if (!fs.existsSync(storageDir)) {
+                fs.mkdirSync(storageDir);
             }
+
+            const pdfFilename = path.join(storageDir, `${doujinTitle}.pdf`);
 
             await images.PDF(pdfFilename);
 
             const fileUrl = `http://${hostname}/nsfw/${encodeURIComponent(doujinTitle)}.pdf`;
-            res.json({ url: fileUrl });
+
+            res.json({ title: doujinTitle, url: fileUrl });
 
             deleteFileAfterOneHour(pdfFilename, fileUrl);
 
             success = true;
-        } catch (error) {
-            console.error('Error searching nhentai or saving file:', error);
         }
+    } catch (error) {
+        console.error('Error searching nhentai or saving file:', error);
+        res.status(500).send('Internal Server Error');
     }
 });
 
 app.use('/nsfw', (req, res, next) => {
-    const filePath = path.join('/tmp', req.path);
+    const filePath = path.join(__dirname, 'pdf', req.path);
     res.setHeader('Content-Disposition', `attachment; filename="${path.basename(filePath)}"`);
     next();
-}, express.static('/tmp'));
+}, express.static(path.join(__dirname, 'pdf')));
 
 app.listen(port, '0.0.0.0', () => {
     console.log(`Server is running on port ${port}`);
