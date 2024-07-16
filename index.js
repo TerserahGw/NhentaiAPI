@@ -9,12 +9,11 @@ const user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, l
 const cookie_value = 'cf_clearance=hScUYYW2Cy7cqxup8LNoSGhSdtu8rP7UKg7_IcBR3yg-1713277222-1.0.1.1-k6E9Qg7QSxFrQKK00569A7SG91JBWbopKtKLzOjVvrjTglOsSD29ZhykNAcrB.4WwTrBA8HqBSyGLQSn_Vhotg';
 const nhentai = new NHentai({ site: 'nhentai.net', user_agent, cookie_value });
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 80;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Function to delete PDF file after 1 hour
 const deleteFileAfterOneHour = (pdfPath, fileUrl) => {
     setTimeout(() => {
         if (fs.existsSync(pdfPath)) {
@@ -22,7 +21,7 @@ const deleteFileAfterOneHour = (pdfPath, fileUrl) => {
             console.log(`File deleted: ${pdfPath}`);
             console.log(`File URL deleted: ${fileUrl}`);
         }
-    }, 3600000); // 1 hour in milliseconds
+    }, 3600000);
 };
 
 cron.schedule('* * * * *', async () => {
@@ -33,6 +32,8 @@ cron.schedule('* * * * *', async () => {
         console.error('Error exploring nhentai:', error);
     }
 });
+
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
@@ -53,7 +54,7 @@ app.get('/doujin', async (req, res) => {
             const { data } = await nhentai.search(query, { page: randomPage });
 
             if (data.length === 0) {
-                continue; // Retry with a different random page
+                continue;
             }
 
             const randomIndex = Math.floor(Math.random() * data.length);
@@ -62,16 +63,16 @@ app.get('/doujin', async (req, res) => {
             console.log(doujinTitle);
             const { images } = await doujin.getContents();
 
-            const tempDir = '/tmp';
+            const tempDir = path.join(__dirname, 'public', 'pdfs');
             const pdfFilename = path.join(tempDir, `${doujinTitle}.pdf`);
 
             if (!fs.existsSync(tempDir)) {
-                fs.mkdirSync(tempDir);
+                fs.mkdirSync(tempDir, { recursive: true });
             }
 
             await images.PDF(pdfFilename);
 
-            const fileUrl = `http://${hostname}:${port}/pdf/${encodeURIComponent(doujinTitle)}.pdf`;
+            const fileUrl = `http://${hostname}/pdfs/${encodeURIComponent(doujinTitle)}.pdf`;
             res.json({ url: fileUrl });
 
             deleteFileAfterOneHour(pdfFilename, fileUrl);
@@ -81,12 +82,6 @@ app.get('/doujin', async (req, res) => {
             console.error('Error searching nhentai or saving file:', error);
         }
     }
-});
-
-app.get('/pdf/:filename', (req, res) => {
-    const { filename } = req.params;
-    const pdfPath = path.join('/tmp', filename);
-    res.sendFile(pdfPath);
 });
 
 app.listen(port, '0.0.0.0', () => {
