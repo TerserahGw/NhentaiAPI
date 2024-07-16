@@ -84,7 +84,7 @@ app.get('/doujin', async (req, res) => {
                 pdfUrl: pdfUrl
             });
 
-            deleteFileAfterOneHour(pdfFilename, doujinUrl);
+            deleteFileAfterOneHour(pdfFilename, pdfUrl);
 
             success = true;
         }
