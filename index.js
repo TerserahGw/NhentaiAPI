@@ -71,6 +71,8 @@ app.get('/doujin', async (req, res) => {
             const fileUrl = `http://${hostname}/nsfw/${encodeURIComponent(doujinTitle)}.pdf`;
             res.json({ url: fileUrl });
 
+            deleteFileAfterOneHour(pdfFilename);
+
             success = true;
         } catch (error) {
             console.error('Error searching nhentai or saving file:', error);
@@ -81,27 +83,21 @@ app.get('/doujin', async (req, res) => {
     }
 });
 
-app.get('/nsfw/:filename', (req, res) => {
-    const filePath = path.join('/tmp', req.params.filename);
+app.use('/nsfw', (req, res, next) => {
+    const filePath = path.join('/tmp', req.path);
+    res.setHeader('Content-Disposition', `attachment; filename="${path.basename(filePath)}"`);
+    
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
 
-    if (fs.existsSync(filePath)) {
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="${path.basename(filePath)}"`);
-        
-        const fileStream = fs.createReadStream(filePath);
-        fileStream.pipe(res);
+    fileStream.on('end', () => {
+        deleteFileAfterOneHour(filePath);
+    });
 
-        fileStream.on('end', () => {
-            deleteFileAfterOneHour(filePath);
-        });
-
-        fileStream.on('error', (err) => {
-            console.error('Error streaming file:', err);
-            res.status(500).send('Internal Server Error');
-        });
-    } else {
-        res.status(404).send('File not found');
-    }
+    fileStream.on('error', (err) => {
+        console.error('Error streaming file:', err);
+        res.status(500).send('Internal Server Error');
+    });
 });
 
 app.listen(port, '0.0.0.0', () => {
