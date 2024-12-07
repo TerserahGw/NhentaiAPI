@@ -11,18 +11,18 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@shineiichijo/nhentai-ts": "^1.0.5",
+    "@shineiichijo/nhentai-ts": "github:TerserahGw/nhentai-ts",
     "express": "^4.19.2",
-    "node-cron": "^3.0.3",
-    "node-fetch": "^3.3.1",
+    "google-auth-library": "^8.7.0",
     "googleapis": "^105.0.0",
-    "google-auth-library": "^8.7.0"
+    "node-cron": "^3.0.3",
+    "node-fetch": "^3.3.1"
   },
   "devDependencies": {
-    "@types/node": "^20.10.0",
     "@types/express": "^4.17.11",
+    "@types/node": "^20.10.0",
     "@types/node-cron": "^2.0.1",
-    "typescript": "^4.5.5",
-    "tsx": "^4.7.1"
+    "tsx": "^4.7.1",
+    "typescript": "^4.5.5"
   }
 }
